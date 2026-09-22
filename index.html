@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DSA tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --bg:#F5F6F2; --grid:rgba(29,35,43,.05); --surface:#FFFFFF; --ink:#1D232B; --muted:#5D6874;
+  --line:#D9DEE3; --track:#E1E5E9;
+  --done:#16855A; --done-soft:#E0F2E8; --blue:#2350D8; --blue-soft:#E2E9FC;
+  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#15231F; --grid:rgba(238,241,232,.05); --surface:#1C2D28; --ink:#EEF1E8; --muted:#A2B3A9;
+    --line:#2E453E; --track:#2B3F38;
+    --done:#7FD9A6; --done-soft:#21382F; --blue:#8DB3FF; --blue-soft:#23324F;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#15231F; --grid:rgba(238,241,232,.05); --surface:#1C2D28; --ink:#EEF1E8; --muted:#A2B3A9;
+  --line:#2E453E; --track:#2B3F38;
+  --done:#7FD9A6; --done-soft:#21382F; --blue:#8DB3FF; --blue-soft:#23324F;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0; background-color:var(--bg); color:var(--ink);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;
+  font-family:var(--f-body); font-size:16px; line-height:1.45; -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:8px}
+.app{max-width:640px;margin:0 auto;padding:0 18px 72px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;padding:22px 0 10px}
+.top h1{margin:0;font:700 28px/1.1 var(--f-display);letter-spacing:-.02em}
+.top .date{margin:4px 0 0;color:var(--muted);font-size:14px}
+.linkbtn{background:none;border:0;padding:10px 4px;color:var(--blue);font-weight:600;font-size:14px}
+.linkbtn:hover{text-decoration:underline}
+
+.tabs{display:flex;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;padding:8px 0 10px;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(6px)}
+.tab{flex:1;height:44px;border-radius:12px;border:1.5px solid var(--line);background:transparent;font:600 15px var(--f-display)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+h2{font:700 18px/1.2 var(--f-display);letter-spacing:-.01em;margin:30px 0 10px}
+
+/* hero ring */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 0 4px}
+.ring{position:relative;width:min(220px,62vw);aspect-ratio:1}
+.ring svg{width:100%;height:100%;display:block}
+.ring circle{transition:stroke .25s}
+.ring-center{position:absolute;inset:0;display:grid;place-content:center}
+.streak-n{font:700 clamp(52px,17vw,68px)/1 var(--f-display);letter-spacing:-.03em}
+.streak-l{font-size:14px;color:var(--muted);margin-top:2px}
+.hero-cap{margin:14px 0 2px;font:600 20px/1.2 var(--f-display)}
+.hero-sub{margin:0;color:var(--muted);font-size:14px}
+
+/* today's questions */
+.qs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.q{display:flex;align-items:flex-start;gap:6px}
+.q.card{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:6px 8px 6px 4px;transition:background .2s,border-color .2s}
+.q.card.done{background:var(--done-soft);border-color:transparent}
+.q.row{padding:2px 0;border-top:1px solid var(--line)}
+.check{flex:none;width:44px;height:44px;background:none;border:0;padding:0;display:grid;place-items:center}
+.box{width:26px;height:26px;border-radius:8px;border:2px solid var(--muted);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.box svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.check[aria-pressed="true"] .box{background:var(--done);border-color:var(--done)}
+.check[aria-pressed="true"] .box svg{opacity:1;stroke:var(--bg)}
+.q-body{flex:1;min-width:0;padding:9px 0 9px}
+.q-title{font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.q.done .q-title{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+.q.card.review{border-left:4px solid var(--blue)}
+.q.card.review.done .q-title{text-decoration:none;color:var(--ink)}
+.q-topic{font-size:13px;color:var(--ink);margin-top:1px}
+.q-note{font-size:13px;color:var(--muted);margin-top:1px}
+.ext{flex:none;width:40px;height:44px;display:grid;place-items:center;color:var(--blue);border-radius:10px}
+.ext svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ext:hover{background:var(--blue-soft)}
+
+/* stats */
+.stat{margin-bottom:14px}
+.stat-h{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+.stat-h b{font-family:var(--f-display);font-weight:700}
+.bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--done);border-radius:inherit;transition:width .3s}
+
+/* topics */
+.tools{display:flex;justify-content:space-between;align-items:center;margin:26px 0 6px}
+.tools h2{margin:0}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.topic-head{width:100%;display:grid;grid-template-columns:1fr auto 20px;gap:4px 12px;align-items:center;text-align:left;
+  background:none;border:0;border-bottom:1px solid var(--line);padding:16px 0 14px}
+.topic-name{font:600 17px/1.25 var(--f-display)}
+.topic-count{font:600 14px var(--f-display);color:var(--muted)}
+.topic-head .bar{grid-column:1/-1;height:6px}
+.chev{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.topic-head[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.topic-body{padding:10px 0 14px}
+.blurb{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.topic-note{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1.5px dashed var(--line);font-size:13px;color:var(--muted)}
+.extras{margin-top:28px}
+.extras h2{margin-top:0}
+.extras p{font-size:14px;color:var(--muted);margin:0}
+.empty{padding:18px 0;color:var(--muted);font-size:14px}
+
+/* modal */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:92%;overflow:auto;background:var(--surface);border-radius:18px 18px 0 0;
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));border:1.5px solid var(--line)}
+.sheet h2{margin:0 0 6px}
+.sheet p{margin:0 0 12px;font-size:14px;color:var(--muted)}
+.sheet label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+.sheet textarea{width:100%;height:96px;resize:vertical;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);
+  padding:10px;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.btn{height:42px;padding:0 16px;border-radius:10px;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:600;font-size:14px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.msg{min-height:20px;font-size:13px;margin-top:10px;color:var(--muted)}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>DSA tracker</h1>
+      <p class="date" id="date"></p>
+    </div>
+    <button class="linkbtn" data-act="backup">Backup</button>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Pages">
+    <button class="tab" role="tab" data-act="tab" data-tab="today" id="tab-today">Today</button>
+    <button class="tab" role="tab" data-act="tab" data-tab="topics" id="tab-topics">Topics</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<div class="scrim" id="modal" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var DATA = {"topics": [{"id": 0, "name": "Arrays & Strings", "blurb": "Non-negotiable \u2014 asked everywhere", "note": "", "items": [{"key": "two-sum", "name": "Two Sum", "note": "Hashmap fundamentals"}, {"key": "three-sum", "name": "Three Sum", "note": "Two pointers after sort"}, {"key": "four-sum", "name": "Four Sum", "note": "Extension of 3Sum"}, {"key": "pairs-with-k-difference", "name": "Pairs with K Difference", "note": "Two pointer / hashmap"}, {"key": "count-pairs-in-array-divisible-by-k", "name": "Count Pairs in Array Divisible by K", "note": "Remainder counting"}, {"key": "missing-and-repeating-number", "name": "Missing and Repeating Number", "note": "Math / XOR trick, common warm-up"}, {"key": "sieve-of-eratosthenes", "name": "Sieve of Eratosthenes", "note": "Good to have ready, rarely core"}, {"key": "isomorphic-strings", "name": "Isomorphic Strings", "note": "Hashmap mapping"}, {"key": "check-anagrams", "name": "Check Anagrams", "note": "Frequency count"}, {"key": "group-anagrams", "name": "Group Anagrams", "note": "Hashmap of sorted-key -> list"}, {"key": "product-of-array-except-self", "name": "Product of Array Except Self", "note": "Prefix/suffix product, no division"}, {"key": "merge-two-sorted-arrays-without-extra-space", "name": "Merge Two Sorted Arrays Without Extra Space", "note": "Gap method / two pointer"}, {"key": "sort-colors-dutch-national-flag-separate-0s-1s-2s", "name": "Sort Colors (Dutch National Flag / Separate 0s,1s,2s)", "note": "Three-pointer partition"}, {"key": "minimum-number-of-swaps-to-sort-an-array", "name": "Minimum Number of Swaps to Sort an Array", "note": "Cycle detection on index-value pairs"}, {"key": "valid-palindrome", "name": "Valid Palindrome", "note": "Two pointers"}, {"key": "valid-palindrome-ii", "name": "Valid Palindrome II", "note": "Two pointers + one-skip logic"}, {"key": "pivot-index-of-array", "name": "Pivot Index of Array", "note": "Prefix sums"}, {"key": "container-with-most-water", "name": "Container With Most Water", "note": "Two pointer, classic"}, {"key": "trapping-rain-water", "name": "Trapping Rain Water", "note": "Two pointer / prefix max, very high frequency"}, {"key": "longest-consecutive-sequence", "name": "Longest Consecutive Sequence", "note": "Hashset, O(n)"}, {"key": "longest-common-prefix", "name": "Longest Common Prefix", "note": "Simple string scan"}, {"key": "set-matrix-zeroes", "name": "Set Matrix Zeroes", "note": "In-place matrix marking"}, {"key": "game-of-life", "name": "Game of Life", "note": "In-place matrix state encoding"}, {"key": "majority-element-i", "name": "Majority Element I", "note": "Boyer-Moore voting"}, {"key": "majority-element-ii", "name": "Majority Element II", "note": "Extended Boyer-Moore"}, {"key": "next-permutation", "name": "Next Permutation", "note": "Common at product companies"}, {"key": "union-intersection-of-two-sorted-arrays", "name": "Union / Intersection of Two Sorted Arrays", "note": "Two pointer basics"}, {"key": "kadane-s-algorithm-maximum-subarray-sum", "name": "Kadane's Algorithm (Maximum Subarray Sum)", "note": "Added \u2014 the single most-asked array question, surprised it wasn't explicit in your sheet"}, {"key": "maximum-product-subarray", "name": "Maximum Product Subarray", "note": "Added \u2014 Kadane variant tracking min & max, very common"}, {"key": "rotate-array-by-k", "name": "Rotate Array by K", "note": "Added \u2014 reversal trick, shows up constantly"}, {"key": "find-the-duplicate-number", "name": "Find the Duplicate Number", "note": "Added \u2014 Floyd's cycle detection applied to an array"}, {"key": "first-missing-positive", "name": "First Missing Positive", "note": "Added \u2014 index-as-hashmap trick, common at bigger companies"}, {"key": "move-zeroes", "name": "Move Zeroes", "note": "Added \u2014 quick two-pointer warm-up, frequent screening question"}, {"key": "spiral-matrix-traversal", "name": "Spiral Matrix Traversal", "note": "Added \u2014 simulation, comes up in matrix-heavy loops"}, {"key": "rotate-image-matrix-90", "name": "Rotate Image (Matrix 90\u00b0)", "note": "Added \u2014 transpose + reverse trick"}, {"key": "3sum-closest", "name": "3Sum Closest", "note": "Re-adding \u2014 you had it, it's a near-duplicate of 3Sum but different enough to trip you up if skipped"}]}, {"id": 1, "name": "Sliding Window & Two Pointers", "blurb": "Extremely common \u2014 non-negotiable", "note": "", "items": [{"key": "subarray-whose-sum-equals-k", "name": "Subarray Whose Sum Equals K", "note": "Prefix sum + hashmap"}, {"key": "longest-substring-without-repeating-characters", "name": "Longest Substring Without Repeating Characters", "note": "Not in your sheet \u2014 classic, add it"}, {"key": "subarray-with-at-most-k-distinct-elements", "name": "Subarray with At Most K Distinct Elements", "note": "Shrinking window"}, {"key": "fruit-into-baskets", "name": "Fruit Into Baskets", "note": "At-most-2-distinct variant"}, {"key": "minimum-window-substring", "name": "Minimum Window Substring", "note": "Hard but very commonly asked"}, {"key": "minimum-size-subarray-sum", "name": "Minimum Size Subarray Sum", "note": "Shrinking window on sum"}, {"key": "longest-subarray-of-1-s-after-deleting-one-element", "name": "Longest Subarray of 1's After Deleting One Element", "note": "Window with one flip"}, {"key": "maximum-consecutive-ones", "name": "Maximum Consecutive Ones", "note": "Warm-up variant"}, {"key": "sliding-window-maximum", "name": "Sliding Window Maximum", "note": "Monotonic deque"}, {"key": "find-all-anagrams-in-a-string", "name": "Find All Anagrams in a String", "note": "Fixed window + frequency map"}, {"key": "number-of-nice-subarrays-odd-count-k", "name": "Number of Nice Subarrays (odd count K)", "note": "Prefix-sum reframing"}, {"key": "longest-palindromic-substring", "name": "Longest Palindromic Substring", "note": "Added \u2014 expand-around-center or DP, one of the single most-asked string questions across all company tiers"}]}, {"id": 2, "name": "Binary Search (core)", "blurb": "Including binary search on answer space", "note": "", "items": [{"key": "binary-search-iterative-recursive", "name": "Binary Search \u2014 Iterative & Recursive", "note": "Baseline, must be muscle memory"}, {"key": "first-and-last-occurrence-of-a-number", "name": "First and Last Occurrence of a Number", "note": "Lower/upper bound"}, {"key": "search-insert-position", "name": "Search Insert Position", "note": "Lower bound variant"}, {"key": "search-in-rotated-sorted-array-i", "name": "Search in Rotated Sorted Array (I)", "note": "Modified binary search"}, {"key": "find-minimum-in-rotated-sorted-array", "name": "Find Minimum in Rotated Sorted Array", "note": "Pairs well with above"}, {"key": "find-peak-element", "name": "Find Peak Element", "note": "Binary search on unsorted-but-structured array"}, {"key": "search-a-2d-matrix-i-ii", "name": "Search a 2D Matrix (I & II)", "note": "Flattened / staircase search"}, {"key": "median-of-two-sorted-arrays", "name": "Median of Two Sorted Arrays", "note": "Hard, but a recurring favorite at bigger companies"}, {"key": "koko-eating-bananas", "name": "Koko Eating Bananas", "note": "Binary search on answer \u2014 canonical example"}, {"key": "split-array-largest-sum-book-allocation-painter-s-partition", "name": "Split Array Largest Sum / Book Allocation / Painter's Partition", "note": "Same pattern as Koko \u2014 do one deeply, recognize the rest"}, {"key": "aggressive-cows", "name": "Aggressive Cows", "note": "Binary search on answer, maximize-min variant"}]}, {"id": 3, "name": "Binary Search (same-pattern variants)", "blurb": "You asked to keep these on your fingertips even though the underlying pattern repeats \u2014 good instinct for a topic this fundamental", "note": "", "items": [{"key": "capacity-to-ship-packages-within-d-days", "name": "Capacity to Ship Packages Within D Days", "note": "Same shape as Koko/Split Array \u2014 minimize-the-max pattern"}, {"key": "find-smallest-divisor-given-a-threshold", "name": "Find Smallest Divisor Given a Threshold", "note": "Same minimize-the-max pattern, different framing"}, {"key": "nth-root-of-a-number", "name": "Nth Root of a Number", "note": "Binary search on a real-valued answer space"}, {"key": "kth-element-of-two-sorted-arrays", "name": "Kth Element of Two Sorted Arrays", "note": "Binary-search partition, same family as Median of Two Sorted Arrays"}, {"key": "median-in-a-row-wise-sorted-matrix", "name": "Median in a Row-Wise Sorted Matrix", "note": "Binary search on value range + counting"}, {"key": "find-single-element-in-a-sorted-array", "name": "Find Single Element in a Sorted Array", "note": "Binary search on parity of index"}, {"key": "find-kth-missing-positive-number", "name": "Find Kth Missing Positive Number", "note": "Binary search on the gap-count"}]}, {"id": 4, "name": "Linked List", "blurb": "Reversal, cycle detection, merge", "note": "", "items": [{"key": "reverse-a-linked-list-iterative-recursive", "name": "Reverse a Linked List \u2014 Iterative & Recursive", "note": "Must be automatic"}, {"key": "reverse-linked-list-in-groups-of-k", "name": "Reverse Linked List in Groups of K", "note": "Common follow-up to above"}, {"key": "detect-cycle-in-a-linked-list-floyd-s", "name": "Detect Cycle in a Linked List (Floyd's)", "note": "Fast/slow pointers"}, {"key": "find-starting-point-of-the-cycle", "name": "Find Starting Point of the Cycle", "note": "Extension of Floyd's"}, {"key": "middle-of-a-linked-list", "name": "Middle of a Linked List", "note": "Fast/slow pointers"}, {"key": "merge-two-sorted-linked-lists", "name": "Merge Two Sorted Linked Lists", "note": "Very common, also feeds Merge K Lists"}, {"key": "add-two-numbers-as-linked-lists", "name": "Add Two Numbers (as Linked Lists)", "note": "Carry propagation"}, {"key": "intersection-node-of-two-linked-lists", "name": "Intersection Node of Two Linked Lists", "note": "Two-pointer length trick"}, {"key": "remove-nth-node-from-end", "name": "Remove Nth Node From End", "note": "Two-pointer gap technique"}, {"key": "reorder-a-linked-list", "name": "Reorder a Linked List", "note": "Combines middle + reverse + merge"}, {"key": "clone-a-linked-list-with-random-pointers", "name": "Clone a Linked List with Random Pointers", "note": "Hashmap or interleaving trick"}, {"key": "flatten-a-multilevel-doubly-linked-list", "name": "Flatten a Multilevel Doubly Linked List", "note": "Only if a company signals it"}, {"key": "lru-cache", "name": "LRU Cache", "note": "Added \u2014 doubly linked list + hashmap, extremely common at product/startup interviews, don't skip this one"}, {"key": "palindrome-linked-list", "name": "Palindrome Linked List", "note": "Added \u2014 find middle + reverse second half, common combo of two patterns you already have"}, {"key": "sort-a-linked-list-merge-sort", "name": "Sort a Linked List (Merge Sort)", "note": "Added \u2014 merge sort adapted to a linked list, occasionally asked directly"}]}, {"id": 5, "name": "Stacks & Queues", "blurb": "Monotonic stack is high-ROI, easy to under-practice", "note": "", "items": [{"key": "valid-parentheses", "name": "Valid Parentheses", "note": "Warm-up"}, {"key": "implement-min-stack", "name": "Implement Min Stack", "note": "Auxiliary stack / encoding trick"}, {"key": "next-greater-element-i", "name": "Next Greater Element I", "note": "Monotonic stack, canonical"}, {"key": "next-greater-element-ii-circular-array", "name": "Next Greater Element II (circular array)", "note": "Variant with wraparound"}, {"key": "daily-temperatures", "name": "Daily Temperatures", "note": "Not in your sheet \u2014 classic monotonic stack, add it"}, {"key": "stock-span-problem", "name": "Stock Span Problem", "note": "Monotonic stack applied to streaming"}, {"key": "largest-rectangle-in-histogram", "name": "Largest Rectangle in Histogram", "note": "Harder monotonic stack, frequently asked"}, {"key": "asteroid-collision", "name": "Asteroid Collision", "note": "Stack simulation"}, {"key": "remove-k-digits", "name": "Remove K Digits", "note": "Monotonic stack, greedy removal"}, {"key": "evaluate-reverse-polish-notation", "name": "Evaluate Reverse Polish Notation", "note": "Added \u2014 straightforward stack simulation, common screening question"}, {"key": "decode-string", "name": "Decode String", "note": "Added \u2014 nested stack simulation, comes up often at product companies"}]}, {"id": 6, "name": "Trees \u2014 Binary Tree", "blurb": "Recursive thinking is the real thing being tested", "note": "", "items": [{"key": "preorder-inorder-postorder-traversal-recursive", "name": "Preorder / Inorder / Postorder Traversal (recursive)", "note": "Foundation"}, {"key": "iterative-preorder-inorder-traversal", "name": "Iterative Preorder / Inorder Traversal", "note": "Stack-based, good to have ready"}, {"key": "level-order-traversal-bfs", "name": "Level Order Traversal (BFS)", "note": "Queue-based"}, {"key": "zig-zag-spiral-level-order-traversal", "name": "Zig-Zag / Spiral Level Order Traversal", "note": "Variant of above"}, {"key": "maximum-depth-height-of-binary-tree", "name": "Maximum Depth / Height of Binary Tree", "note": "Base recursion case"}, {"key": "diameter-of-binary-tree", "name": "Diameter of Binary Tree", "note": "Classic recursive pattern"}, {"key": "balanced-binary-tree-check", "name": "Balanced Binary Tree Check", "note": "Same pattern as diameter/height"}, {"key": "same-tree-symmetric-tree", "name": "Same Tree / Symmetric Tree", "note": "Mirror recursion"}, {"key": "lowest-common-ancestor-in-binary-tree", "name": "Lowest Common Ancestor in Binary Tree", "note": "Very high frequency"}, {"key": "path-sum-i-ii", "name": "Path Sum I & II", "note": "DFS with backtracking"}, {"key": "maximum-path-sum-in-binary-tree", "name": "Maximum Path Sum in Binary Tree", "note": "Harder recursion, commonly asked"}, {"key": "left-right-view-of-binary-tree", "name": "Left/Right View of Binary Tree", "note": "Level-order variant"}, {"key": "vertical-order-traversal", "name": "Vertical Order Traversal", "note": "Coordinate tracking + sorting"}, {"key": "construct-tree-from-inorder-preorder", "name": "Construct Tree from Inorder + Preorder", "note": "Recursive index mapping"}, {"key": "serialize-and-deserialize-binary-tree", "name": "Serialize and Deserialize Binary Tree", "note": "Common at product companies"}, {"key": "time-to-burn-tree-from-a-node", "name": "Time to Burn Tree from a Node", "note": "Nice-to-have, less frequent"}, {"key": "populating-next-right-pointers-in-each-node", "name": "Populating Next Right Pointers in Each Node", "note": "Added \u2014 level-order variant that shows up a lot at product companies"}]}, {"id": 7, "name": "Trees \u2014 BST", "blurb": "BST logic + recursion", "note": "", "items": [{"key": "search-insert-delete-in-bst", "name": "Search / Insert / Delete in BST", "note": "Foundational operations"}, {"key": "validate-binary-search-tree", "name": "Validate Binary Search Tree", "note": "Very high frequency"}, {"key": "kth-smallest-largest-element-in-bst", "name": "Kth Smallest / Largest Element in BST", "note": "Inorder traversal trick"}, {"key": "lowest-common-ancestor-in-bst", "name": "Lowest Common Ancestor in BST", "note": "Simpler than general-tree LCA"}, {"key": "convert-sorted-array-to-balanced-bst", "name": "Convert Sorted Array to Balanced BST", "note": "Not in your sheet \u2014 common, add it"}, {"key": "construct-bst-from-preorder-traversal", "name": "Construct BST from Preorder Traversal", "note": "Less frequent"}]}, {"id": 8, "name": "Recursion & Backtracking", "blurb": "Per your own note \u2014 don't go beyond this depth", "note": "Deprioritized: Sudoku Solver, Rat in a Maze, M-Coloring \u2014 these go past the depth your own notes call for backtracking. Skip unless a specific interview loop signals heavy backtracking.", "items": [{"key": "subsets-subsets-ii", "name": "Subsets / Subsets II", "note": "Foundation of backtracking"}, {"key": "permutations-of-a-string-array", "name": "Permutations of a String/Array", "note": "Classic backtracking"}, {"key": "combination-sum-i-ii", "name": "Combination Sum I & II", "note": "Backtracking with pruning"}, {"key": "letter-combinations-of-a-phone-number", "name": "Letter Combinations of a Phone Number", "note": "Backtracking on mapping"}, {"key": "generate-valid-parentheses", "name": "Generate Valid Parentheses", "note": "Backtracking with constraints"}, {"key": "word-search", "name": "Word Search", "note": "Backtracking on grid"}, {"key": "n-queens-basic-version", "name": "N-Queens (basic version)", "note": "Know the pattern, don't over-optimize"}]}, {"id": 9, "name": "Graphs (core)", "blurb": "BFS/DFS fundamentals \u2014 this is the real bar, not advanced algorithms", "note": "", "items": [{"key": "bfs-and-dfs-traversal-from-scratch", "name": "BFS and DFS Traversal (from scratch)", "note": "Must be automatic on adjacency list"}, {"key": "number-of-provinces-connected-components", "name": "Number of Provinces / Connected Components", "note": "Union-Find or DFS"}, {"key": "number-of-islands", "name": "Number of Islands", "note": "The canonical grid-graph problem"}, {"key": "clone-graph", "name": "Clone Graph", "note": "Not explicitly in your sheet \u2014 very common, add it"}, {"key": "flood-fill", "name": "Flood Fill", "note": "Simple DFS/BFS on grid"}, {"key": "rotten-oranges", "name": "Rotten Oranges", "note": "Multi-source BFS"}, {"key": "cycle-detection-undirected-graph", "name": "Cycle Detection \u2014 Undirected Graph", "note": "DFS with parent tracking, or Union-Find"}, {"key": "cycle-detection-directed-graph", "name": "Cycle Detection \u2014 Directed Graph", "note": "DFS with recursion stack"}, {"key": "bipartite-graph-check", "name": "Bipartite Graph Check", "note": "BFS/DFS 2-coloring"}, {"key": "topological-sort-kahn-s-bfs", "name": "Topological Sort (Kahn's BFS)", "note": "Know one implementation cold"}, {"key": "course-schedule-i-ii", "name": "Course Schedule I & II", "note": "Topological sort applied"}, {"key": "number-of-distinct-islands", "name": "Number of Distinct Islands", "note": "Only if time permits"}, {"key": "pacific-atlantic-water-flow", "name": "Pacific Atlantic Water Flow", "note": "Added \u2014 multi-source DFS/BFS from two boundaries, a good step up from Number of Islands"}, {"key": "surrounded-regions", "name": "Surrounded Regions", "note": "Added \u2014 boundary-first DFS/BFS, similar flavor to flood fill but trickier"}, {"key": "redundant-connection", "name": "Redundant Connection", "note": "Added \u2014 Union-Find applied to cycle detection, very natural extension of your disjoint-set section"}]}, {"id": 10, "name": "Graphs \u2014 Weighted (light)", "blurb": "Know it exists, understand trade-offs \u2014 don't grind variants", "note": "Deprioritized per your own ROI notes \u2014 know these exist conceptually, don't grind problem sets: Bellman-Ford, Kruskal's/Prim's MST, topological-sort nuances beyond one implementation, Alien Dictionary, Word Ladder, Number of Islands II, Making a Large Island.", "items": [{"key": "dijkstra-s-algorithm", "name": "Dijkstra's Algorithm", "note": "Understand + implement once with a heap"}, {"key": "disjoint-set-union-find-by-rank-size", "name": "Disjoint Set / Union-Find (by rank & size)", "note": "Reusable building block for many array/graph problems"}]}, {"id": 11, "name": "Heaps / Priority Queue", "blurb": "Already well-scoped in your own sheet \u2014 keep as-is", "note": "Conceptual questions to be ready for alongside heap coding: heap vs BST, why O(log n) insert/delete but O(1) peek, array-based heap index math, when to use a heap vs sorting upfront.", "items": [{"key": "kth-largest-kth-smallest-element-in-an-array", "name": "Kth Largest / Kth Smallest Element in an Array", "note": "Heap or quickselect"}, {"key": "top-k-frequent-elements", "name": "Top K Frequent Elements", "note": "Heap or bucket sort"}, {"key": "merge-k-sorted-lists-arrays", "name": "Merge K Sorted Lists / Arrays", "note": "Min-heap over list heads"}, {"key": "find-median-from-a-data-stream", "name": "Find Median from a Data Stream", "note": "Two-heap technique"}, {"key": "task-scheduler", "name": "Task Scheduler", "note": "Heap + cooldown counting"}, {"key": "meeting-rooms-ii-min-meeting-rooms-needed", "name": "Meeting Rooms II (min meeting rooms needed)", "note": "Heap over interval end times"}, {"key": "k-closest-points-to-origin", "name": "K Closest Points to Origin", "note": "Added \u2014 max-heap of size k, common variant of the kth-largest pattern"}]}, {"id": 12, "name": "Greedy & Intervals", "blurb": "Common, moderate depth", "note": "", "items": [{"key": "merge-overlapping-intervals", "name": "Merge Overlapping Intervals", "note": "Sort + merge, very common"}, {"key": "insert-interval", "name": "Insert Interval", "note": "Variant of merge"}, {"key": "non-overlapping-intervals", "name": "Non-Overlapping Intervals", "note": "Greedy by end time"}, {"key": "n-meetings-in-a-room", "name": "N Meetings in a Room", "note": "Same pattern as above"}, {"key": "minimum-platforms-required", "name": "Minimum Platforms Required", "note": "Two-pointer or sort-based greedy"}, {"key": "gas-station", "name": "Gas Station", "note": "Circular greedy"}, {"key": "jump-game-i-ii", "name": "Jump Game I & II", "note": "Greedy reachability"}, {"key": "task-scheduler", "name": "Task Scheduler", "note": "Overlaps with heap section \u2014 one implementation is enough"}]}, {"id": 13, "name": "Dynamic Programming", "blurb": "Patterns over memorization \u2014 per your own scoping", "note": "Deprioritized per your own notes (hard DP / low ROI for your target companies): DP on squares, Matrix Chain Multiplication & partition-DP, Wildcard Matching, Distinct Subsequences, Shortest Common Supersequence, Longest Arithmetic/Bitonic Subsequence, Longest String Chain. Skip unless a specific prep signal says otherwise.", "items": [{"key": "climbing-stairs", "name": "Climbing Stairs", "note": "Fibonacci-style base case"}, {"key": "house-robber-i-ii", "name": "House Robber I & II", "note": "1D DP, very common"}, {"key": "frog-jump", "name": "Frog Jump", "note": "1D DP variant"}, {"key": "unique-paths-i-ii-grid-with-obstacles", "name": "Unique Paths I & II (grid, with obstacles)", "note": "2D grid DP foundation"}, {"key": "minimum-path-sum", "name": "Minimum Path Sum", "note": "2D grid DP"}, {"key": "triangle-minimum-path-sum-in-triangle", "name": "Triangle (Minimum Path Sum in Triangle)", "note": "2D DP variant"}, {"key": "minimum-maximum-falling-path-sum", "name": "Minimum/Maximum Falling Path Sum", "note": "2D DP variant"}, {"key": "0-1-knapsack", "name": "0/1 Knapsack", "note": "Base pattern for subset-sum family"}, {"key": "subset-sum-equal-to-k-partition-equal-subset-sum", "name": "Subset Sum Equal to K / Partition Equal Subset Sum", "note": "Direct knapsack application"}, {"key": "coin-change-min-coins", "name": "Coin Change (min coins)", "note": "Unbounded knapsack, very high frequency"}, {"key": "coin-change-ii-number-of-ways", "name": "Coin Change II (number of ways)", "note": "Counting variant"}, {"key": "target-sum", "name": "Target Sum", "note": "Subset-sum reframing"}, {"key": "longest-common-subsequence", "name": "Longest Common Subsequence", "note": "DP on strings foundation"}, {"key": "edit-distance", "name": "Edit Distance", "note": "Very high frequency, builds on LCS"}, {"key": "longest-palindromic-subsequence", "name": "Longest Palindromic Subsequence", "note": "LCS variant"}, {"key": "best-time-to-buy-and-sell-stock-i-ii", "name": "Best Time to Buy and Sell Stock I & II", "note": "Simple state machine DP"}, {"key": "best-time-to-buy-sell-stock-with-cooldown-fee", "name": "Best Time to Buy/Sell Stock with Cooldown / Fee", "note": "Extended state machine"}, {"key": "longest-increasing-subsequence-o-n-log-n", "name": "Longest Increasing Subsequence (O(n log n))", "note": "Know both O(n\u00b2) and O(n log n)"}, {"key": "word-break", "name": "Word Break", "note": "Added \u2014 string DP with a hashset, extremely common and missing from your sheet entirely"}, {"key": "decode-ways", "name": "Decode Ways", "note": "Added \u2014 1D DP with a string-decoding twist, common at product companies"}, {"key": "palindrome-partitioning-minimum-cuts", "name": "Palindrome Partitioning (Minimum Cuts)", "note": "Added \u2014 you had the harder 'count all partitions' version deprioritized; this min-cuts version is more commonly asked and worth keeping"}]}, {"id": 14, "name": "Bit Manipulation", "blurb": "Good warm-up / conceptual fluency, not a heavy focus", "note": "", "items": [{"key": "check-even-odd-power-of-2-count-set-bits", "name": "Check Even/Odd, Power of 2, Count Set Bits", "note": "Fluency basics"}, {"key": "single-number-i-ii-iii", "name": "Single Number I, II, III", "note": "XOR tricks, commonly asked"}, {"key": "missing-number", "name": "Missing Number", "note": "XOR or sum trick"}, {"key": "counting-bits", "name": "Counting Bits", "note": "DP + bit trick"}, {"key": "sum-of-two-integers-without-operator", "name": "Sum of Two Integers Without + Operator", "note": "Rare but occasionally asked"}]}, {"id": 15, "name": "Tries", "blurb": "Only invest here if a target company signals search/autocomplete work", "note": "Conceptual framing to have ready: Trie vs HashMap for prefix search, space trade-offs of tries, when you'd reach for a trie vs a suffix structure (companies often care more about you narrating the choice than writing bug-free trie code cold).", "items": [{"key": "implement-trie-insert-search-startswith", "name": "Implement Trie (insert, search, startsWith)", "note": "Shows up constantly once tries come up at all"}, {"key": "word-search-ii-trie-backtracking", "name": "Word Search II (Trie + backtracking)", "note": "Only if company does search-heavy work"}, {"key": "add-and-search-word-wildcard-support", "name": "Add and Search Word (wildcard support)", "note": "Same as above"}, {"key": "longest-common-prefix-via-trie", "name": "Longest Common Prefix via Trie", "note": "Alternate to the array-based version already covered"}]}], "footer": "A few more real gaps worth knowing exist, but genuinely optional (didn't force these in \u2014 they're either narrow or company-specific): Kth Largest Element in a Stream (design variant of the heap pattern you already have), Basic Calculator (harder stack simulation), Sliding Window Median (hard extension of the two-heap median trick), Graph Valid Tree (edge-count + connectivity check)."};
+var DAILY = 4;
+var STORE_KEY = 'dsa-tracker-v1';
+
+/* ---------- question bank ---------- */
+var TOPICS = DATA.topics, BYKEY = {}, UNIQUE = [];
+TOPICS.forEach(function(t){
+  t.items.forEach(function(it){
+    if(!BYKEY[it.key]){ BYKEY[it.key] = {key:it.key,name:it.name,note:it.note,topic:t.id}; UNIQUE.push(BYKEY[it.key]); }
+  });
+});
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmt(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function parseD(s){ var p=s.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function addDays(s,n){ var d=parseD(s); d.setDate(d.getDate()+n); return fmt(d); }
+function todayStr(){ return fmt(new Date()); }
+var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/* ---------- state ---------- */
+/* solved[key] = the date (YYYY-MM-DD) it was ticked, or null if that date is unknown
+   (only happens for progress migrated from an older version of this tracker). */
+function emptyState(){ return {v:2,solved:{},reviews:{},updatedAt:0}; }
+function migrateFromDays(o){
+  var solved={};
+  if(o.days && typeof o.days==='object'){
+    Object.keys(o.days).forEach(function(d){
+      if(!DATE_RE.test(d)) return;
+      var r=o.days[d]; if(!r || !Array.isArray(r.done)) return;
+      r.done.forEach(function(k){ if(BYKEY[k]) solved[k]=d; });
+    });
+  }
+  if(o.solved && typeof o.solved==='object'){
+    Object.keys(o.solved).forEach(function(k){
+      if(!BYKEY[k] || solved[k]) return;
+      var v=o.solved[k];
+      solved[k]= (typeof v==='string' && DATE_RE.test(v)) ? v : null;
+    });
+  }
+  return solved;
+}
+function sanitize(o){
+  if(!o || typeof o!=='object') return null;
+  var s=emptyState(), src, k;
+  src = o.days ? migrateFromDays(o) : (o.solved && typeof o.solved==='object' ? o.solved : {});
+  for(k in src){
+    if(!BYKEY[k]) continue;
+    var v=src[k];
+    s.solved[k]= (typeof v==='string' && DATE_RE.test(v)) ? v : null;
+  }
+  if(o.reviews && typeof o.reviews==='object'){
+    for(var w in o.reviews){
+      if(!DATE_RE.test(w)) continue;
+      var rv=o.reviews[w]; if(!rv || !Array.isArray(rv.ids)) continue;
+      var rids=rv.ids.filter(function(x){return BYKEY[x];});
+      var rdone=(Array.isArray(rv.done)?rv.done:[]).filter(function(x){return rids.indexOf(x)>-1;});
+      s.reviews[w]={ids:rids,done:rdone};
+    }
+  }
+  s.updatedAt = Number(o.updatedAt)||0;
+  return s;
+}
+function loadLocal(){
+  try{ var raw=localStorage.getItem(STORE_KEY); if(raw){ var s=sanitize(JSON.parse(raw)); if(s) return s; } }catch(e){}
+  return emptyState();
+}
+var state = loadLocal();
+function persistLocal(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+function save(){ state.updatedAt=Date.now(); persistLocal(); schedulePush(); }
+
+/* ---------- to-do list: the next unsolved questions in sheet order ---------- */
+function toDo(n){
+  var out=[];
+  for(var i=0;i<UNIQUE.length && out.length<n;i++){
+    if(!(UNIQUE[i].key in state.solved)) out.push(UNIQUE[i].key);
+  }
+  return out;
+}
+function weekStart(dstr){ var dow=(parseD(dstr).getDay()+6)%7; return addDays(dstr,-dow); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+/* The review week is the Mon-Sun week that ends on the most recent Sunday (today, if today is Sunday). */
+function reviewWeek(dstr){
+  var dow=(parseD(dstr).getDay()+6)%7, ws=weekStart(dstr);
+  return dow===6 ? ws : addDays(ws,-7);
+}
+function ensureReview(){
+  var pw=reviewWeek(todayStr()), cur=state.reviews[pw];
+  if(cur && cur.ids.length) return;
+  var pweek=addDays(pw,6), pool=[];
+  for(var k in state.solved){
+    var v=state.solved[k];
+    if(v && v>=pw && v<=pweek) pool.push(k);
+  }
+  if(!pool.length && cur) return;
+  state.reviews[pw]={ids:shuffle(pool).slice(0,4),done:[]};
+  save();
+}
+function setSolved(key,on){
+  if(on) state.solved[key]=todayStr();
+  else delete state.solved[key];
+  save();
+}
+
+/* ---------- streak: any day with at least one question solved counts.
+   Recomputed from history every time, so the best streak is always accurate. ---------- */
+function computeStreak(){
+  var byDay={}, k, v;
+  for(k in state.solved){ v=state.solved[k]; if(v) byDay[v]=true; }
+  var dates=Object.keys(byDay).sort(), best=0, run=0, prev=null;
+  dates.forEach(function(ds){
+    run = (prev && addDays(prev,1)===ds) ? run+1 : 1;
+    if(run>best) best=run;
+    prev=ds;
+  });
+  var today=todayStr(), todayDone=!!byDay[today];
+  var cur=0, d=todayDone?today:addDays(today,-1);
+  while(byDay[d]){ cur++; d=addDays(d,-1); }
+  if(cur>best) best=cur;
+  return {streak:cur, best:best, todayDone:todayDone};
+}
+
+/* ---------- rendering ---------- */
+var ui = {tab:'today', open:{}, hideSolved:false};
+var renderedDate = todayStr();
+var ICON_CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+var ICON_EXT='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>';
+var ICON_CHEV='<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+function findUrl(name){ return 'https://www.google.com/search?q='+encodeURIComponent(name+' leetcode'); }
+function extLink(name){
+  return '<a class="ext" href="'+findUrl(name)+'" target="_blank" rel="noopener noreferrer" aria-label="Find '+esc(name)+' online" title="Find the problem online">'+ICON_EXT+'</a>';
+}
+function checkBtn(key,on,src,name,act,week){
+  act=act||'toggle';
+  return '<button class="check" data-act="'+act+'" data-src="'+src+'" data-k="'+esc(key)+'"'+(week?' data-w="'+week+'"':'')+' aria-pressed="'+(on?'true':'false')+'" aria-label="Mark '+esc(name)+(act==='review'?' as remembered':' as done')+'"><span class="box">'+ICON_CHECK+'</span></button>';
+}
+
+function ringSVG(on){
+  var R=84, sw=14;
+  return '<svg viewBox="0 0 200 200" role="img" aria-label="'+(on?'Solved a question today':'Nothing solved yet today')+'">'+
+    '<circle cx="100" cy="100" r="'+R+'" fill="none" stroke="'+(on?'var(--done)':'var(--track)')+'" stroke-width="'+sw+'"/></svg>';
+}
+
+function renderToday(){
+  var t=todayStr(), ids=toDo(DAILY), S=computeStreak();
+  var h='<section class="hero"><div class="ring">'+ringSVG(S.todayDone)+
+    '<div class="ring-center"><span class="streak-n">'+S.streak+'</span><span class="streak-l">day streak</span></div></div>';
+  var cap = S.todayDone ? 'Today counts. Keep it going.'
+    : (S.streak>0 ? 'Solve one question today to make it '+(S.streak+1)+'.' : 'Solve one question today to start a streak.');
+  h+='<p class="hero-cap">'+cap+'</p>';
+  h+='<p class="hero-sub">Best streak: '+S.best+' day'+(S.best===1?'':'s')+'</p></section>';
+
+  h+='<h2>To do</h2>';
+  if(ids.length){
+    h+='<ol class="qs">';
+    ids.forEach(function(k){
+      var p=BYKEY[k];
+      h+='<li class="q card">'+checkBtn(k,false,'todo',p.name)+
+        '<div class="q-body"><div class="q-title"><span>'+esc(p.name)+'</span></div>'+
+        '<div class="q-topic">'+esc(TOPICS[p.topic].name)+'</div>'+
+        (p.note?'<div class="q-note">'+esc(p.note)+'</div>':'')+'</div>'+extLink(p.name)+'</li>';
+    });
+    h+='</ol>';
+  }else{
+    h+='<p class="empty">You have solved every question on the list.</p>';
+  }
+
+  var pw=reviewWeek(t), rv=state.reviews[pw];
+  h+='<h2>Weekly review</h2>';
+  if(rv && rv.ids.length){
+    var lo={day:'numeric',month:'short'};
+    h+='<p class="blurb">Questions from '+parseD(pw).toLocaleDateString(undefined,lo)+' to '+parseD(addDays(pw,6)).toLocaleDateString(undefined,lo)+
+      '. Try to recall the approach and code it before you look anything up, then tick the ones you remember.</p><ol class="qs">';
+    rv.ids.forEach(function(k){
+      var p=BYKEY[k], on=rv.done.indexOf(k)>-1;
+      h+='<li class="q card review'+(on?' done':'')+'">'+checkBtn(k,on,'review',p.name,'review',pw)+
+        '<div class="q-body"><div class="q-title"><span>'+esc(p.name)+'</span></div><div class="q-topic">'+esc(TOPICS[p.topic].name)+'</div></div>'+extLink(p.name)+'</li>';
+    });
+    h+='</ol>';
+  }else{
+    h+='<p class="empty">No questions to review yet. Every Sunday, 4 random questions you solved that week will show up here so you can check you still remember them.</p>';
+  }
+  var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
+  h+='<h2>Overall</h2>'+
+    '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div>';
+  return h;
+}
+
+function renderTopics(){
+  var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
+  var h='<div class="tools"><h2>'+solved+' of '+total+' solved</h2><button class="chip" data-act="hide" aria-pressed="'+ui.hideSolved+'">Hide solved</button></div>';
+  TOPICS.forEach(function(t){
+    var s=t.items.filter(function(i){return state.solved[i.key];}).length, open=!!ui.open[t.id];
+    h+='<section class="topic"><button class="topic-head" data-act="topic" data-t="'+t.id+'" aria-expanded="'+open+'">'+
+      '<span class="topic-name">'+esc(t.name)+'</span><span class="topic-count">'+s+' / '+t.items.length+'</span>'+ICON_CHEV+
+      '<span class="bar"><i style="width:'+(100*s/t.items.length)+'%"></i></span></button>';
+    if(open){
+      h+='<div class="topic-body">'+(t.blurb?'<p class="blurb">'+esc(t.blurb)+'</p>':'');
+      var rows=t.items.filter(function(i){return !(ui.hideSolved && state.solved[i.key]);});
+      if(!rows.length) h+='<p class="empty">Everything here is solved.</p>';
+      else{
+        h+='<ul class="qs" style="gap:0">';
+        rows.forEach(function(i){
+          var on=!!state.solved[i.key];
+          h+='<li class="q row'+(on?' done':'')+'">'+checkBtn(i.key,on,'t'+t.id,i.name)+
+            '<div class="q-body"><div class="q-title"><span>'+esc(i.name)+'</span></div>'+
+            (i.note?'<div class="q-note">'+esc(i.note)+'</div>':'')+'</div>'+extLink(i.name)+'</li>';
+        });
+        h+='</ul>';
+      }
+      if(t.note) h+='<p class="topic-note">'+esc(t.note)+'</p>';
+      h+='</div>';
+    }
+    h+='</section>';
+  });
+  if(DATA.footer) h+='<aside class="extras"><h2>Optional extras</h2><p>'+esc(DATA.footer)+'</p></aside>';
+  return h;
+}
+
+var viewEl=document.getElementById('view');
+function render(focusSel){
+  ensureReview();
+  renderedDate=todayStr();
+  document.getElementById('date').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'});
+  ['today','topics'].forEach(function(n){
+    var b=document.getElementById('tab-'+n); b.setAttribute('aria-selected', ui.tab===n?'true':'false');
+  });
+  viewEl.innerHTML = ui.tab==='today' ? renderToday() : renderTopics();
+  if(focusSel){ var el=document.querySelector(focusSel); if(el) el.focus({preventScroll:true}); }
+}
+
+/* ---------- backup modal ---------- */
+var modalEl=document.getElementById('modal'), lastFocus=null, downloadsCap=null;
+var syncStatus='local';
+function syncLine(){
+  return syncStatus==='synced'
+    ? 'Your progress is synced to your Claude account, so other devices you open this on will pick it up.'
+    : 'Your progress is saved in this browser only. Use a backup to move it to another device.';
+}
+function openModal(){
+  lastFocus=document.activeElement;
+  modalEl.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mh">'+
+    '<h2 id="mh">Backup and restore</h2><p>'+syncLine()+'</p>'+
+    '<label for="exportBox">Your backup</label><textarea id="exportBox" readonly></textarea>'+
+    '<div class="btns"><button class="btn" data-act="copy">Copy backup</button>'+
+    (downloadsCap?'<button class="btn ghost" data-act="savefile">Save as file</button>':'')+'</div>'+
+    '<label for="importBox">Restore from a backup</label><textarea id="importBox" placeholder="Paste a backup here"></textarea>'+
+    '<div class="btns"><button class="btn" data-act="restore">Restore</button><button class="btn ghost" data-act="close">Close</button></div>'+
+    '<p class="msg" id="bmsg" role="status" aria-live="polite"></p></div>';
+  modalEl.hidden=false;
+  document.getElementById('exportBox').value=JSON.stringify(state);
+  var c=modalEl.querySelector('[data-act="close"]'); if(c) c.focus();
+}
+function closeModal(){ modalEl.hidden=true; modalEl.innerHTML=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+function say(m){ var e=document.getElementById('bmsg'); if(e) e.textContent=m; }
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+  if(e.target===modalEl){ closeModal(); return; }
+  var el=e.target.closest('[data-act]'); if(!el) return;
+  var act=el.getAttribute('data-act');
+  if(act==='tab'){ ui.tab=el.getAttribute('data-tab'); render(); window.scrollTo(0,0); }
+  else if(act==='toggle'){
+    var k=el.getAttribute('data-k'), src=el.getAttribute('data-src');
+    setSolved(k, el.getAttribute('aria-pressed')!=='true');
+    render('[data-act="toggle"][data-src="'+src+'"][data-k="'+CSS.escape(k)+'"]');
+  }
+  else if(act==='review'){
+    var w=el.getAttribute('data-w'), rk=el.getAttribute('data-k'), rv=state.reviews[w];
+    if(rv){
+      var ix=rv.done.indexOf(rk);
+      if(ix>-1) rv.done.splice(ix,1); else rv.done.push(rk);
+      save(); render('[data-act="review"][data-k="'+CSS.escape(rk)+'"]');
+    }
+  }
+  else if(act==='topic'){
+    var id=el.getAttribute('data-t'); ui.open[id]=!ui.open[id]; render('[data-act="topic"][data-t="'+id+'"]');
+  }
+  else if(act==='hide'){ ui.hideSolved=!ui.hideSolved; render('[data-act="hide"]'); }
+  else if(act==='backup'){ openModal(); }
+  else if(act==='close'){ closeModal(); }
+  else if(act==='copy'){
+    var box=document.getElementById('exportBox'), text=box.value;
+    (navigator.clipboard&&navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).then(
+      function(){ say('Backup copied.'); },
+      function(){ box.focus(); box.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(_){} say(ok?'Backup copied.':'Select the text above and copy it.'); }
+    );
+  }
+  else if(act==='savefile'){
+    downloadsCap.save({filename:'dsa-tracker-backup.json',data:JSON.stringify(state)}).then(
+      function(){ say('Saved.'); },
+      function(err){ say(err&&err.code==='declined' ? 'Save cancelled.' : 'Could not save a file here. Use Copy backup instead.'); }
+    );
+  }
+  else if(act==='restore'){
+    var raw=document.getElementById('importBox').value.trim();
+    if(!raw){ say('Paste a backup first.'); return; }
+    var parsed=null; try{ parsed=sanitize(JSON.parse(raw)); }catch(_){}
+    if(!parsed || !Object.keys(parsed.solved).length){ say('That does not look like a backup from this tracker.'); return; }
+    state=parsed; save(); render();
+    document.getElementById('exportBox').value=JSON.stringify(state);
+    say('Restored. '+Object.keys(state.solved).length+' solved questions loaded.');
+  }
+});
+document.addEventListener('keydown',function(e){ if(e.key==='Escape' && !modalEl.hidden) closeModal(); });
+
+/* ---------- day rollover ---------- */
+function checkRollover(){ if(todayStr()!==renderedDate && modalEl.hidden) render(); }
+setInterval(checkRollover,60000);
+
+/* ---------- optional account sync (progressive; the app works without it) ---------- */
+var dbDoc=null, pushTimer=null, pushing=false, pushAgain=false, pulling=false;
+function schedulePush(){ if(!dbDoc) return; clearTimeout(pushTimer); pushTimer=setTimeout(doPush,800); }
+function doPush(){
+  if(!dbDoc) return;
+  if(pushing){ pushAgain=true; return; }
+  pushing=true;
+  dbDoc.set(JSON.parse(JSON.stringify(state))).then(function(){ syncStatus='synced'; },function(){ syncStatus='local'; }).then(function(){
+    pushing=false; if(pushAgain){ pushAgain=false; schedulePush(); }
+  });
+}
+function pull(){
+  if(!dbDoc || pulling) return;
+  pulling=true;
+  dbDoc.get().then(function(snap){
+    syncStatus='synced';
+    if(snap.exists){
+      var remote=sanitize(snap.data());
+      if(remote && remote.updatedAt>state.updatedAt){ state=remote; persistLocal(); if(modalEl.hidden) render(); }
+      else if(remote && remote.updatedAt<state.updatedAt){ schedulePush(); }
+    }else if(Object.keys(state.solved).length){ schedulePush(); }
+  }).catch(function(){ syncStatus='local'; }).then(function(){ pulling=false; });
+}
+function initCaps(){
+  if(!window.claude || !window.claude.use) return;
+  window.claude.use('downloads').then(function(d){ downloadsCap=d; }).catch(function(){});
+  Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){
+    var db=r[0], user=r[1]; if(!db||!user) return null;
+    return user.id().then(function(uid){
+      if(!uid) return;
+      dbDoc=db.doc('data/users/'+uid+'/tracker');
+      pull();
+    });
+  }).catch(function(){});
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){ checkRollover(); pull(); }
+});
+
+render();
+initCaps();
+})();
+</script>
+</body>
+</html>
