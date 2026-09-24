@@ -303,7 +303,10 @@ function ringSVG(on){
 
 function renderToday(){
   var t=todayStr(), ids=toDo(DAILY), S=computeStreak();
-  var h='<section class="hero"><div class="ring">'+ringSVG(S.todayDone)+
+  var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
+  var h='<h2 style="margin-top:6px">Overall</h2>'+
+    '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div>';
+  h+='<section class="hero"><div class="ring">'+ringSVG(S.todayDone)+
     '<div class="ring-center"><span class="streak-n">'+S.streak+'</span><span class="streak-l">day streak</span></div></div>';
   var cap = S.todayDone ? 'Today counts. Keep it going.'
     : (S.streak>0 ? 'Solve one question today to make it '+(S.streak+1)+'.' : 'Solve one question today to start a streak.');
@@ -340,9 +343,6 @@ function renderToday(){
   }else{
     h+='<p class="empty">No questions to review yet. Every Sunday, 4 random questions you solved that week will show up here so you can check you still remember them.</p>';
   }
-  var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
-  h+='<h2>Overall</h2>'+
-    '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div>';
   return h;
 }
 
