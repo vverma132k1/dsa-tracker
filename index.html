@@ -326,32 +326,10 @@ function ringSVG(on){
 }
 
 function renderToday(){
-  var t=todayStr(), ids=toDo(DAILY), S=computeStreak();
+  var t=todayStr();
   var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
   var h='<h2 style="margin-top:6px">Overall</h2>'+
     '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div>';
-  h+='<section class="hero"><div class="ring">'+ringSVG(S.todayDone)+
-    '<div class="ring-center"><span class="streak-n">'+S.streak+'</span><span class="streak-l">day streak</span></div></div>';
-  var cap = S.todayDone ? 'Today counts. Keep it going.'
-    : (S.streak>0 ? 'Solve one question today to make it '+(S.streak+1)+'.' : 'Solve one question today to start a streak.');
-  h+='<p class="hero-cap">'+cap+'</p>';
-  h+='<p class="hero-sub">Best streak: '+S.best+' day'+(S.best===1?'':'s')+'</p></section>';
-
-  h+='<h2>To do</h2>';
-  if(ids.length){
-    h+='<ol class="qs">';
-    ids.forEach(function(k){
-      var p=BYKEY[k];
-      h+='<li class="q card">'+checkBtn(k,false,'todo',p.name)+
-        '<div class="q-body"><div class="q-title"><span>'+esc(p.name)+'</span></div>'+
-        '<div class="q-topic">'+esc(TOPICS[p.topic].name)+'</div>'+
-        (p.note?'<div class="q-note">'+esc(p.note)+'</div>':'')+'</div>'+extLink(p.name)+'</li>';
-    });
-    h+='</ol>';
-  }else{
-    h+='<p class="empty">You have solved every question on the list.</p>';
-  }
-
   var pw=reviewWeek(t), rv=state.reviews[pw];
   h+='<h2>Weekly review</h2>';
   if(rv && rv.ids.length){
