@@ -92,6 +92,11 @@ h2{font:700 18px/1.2 var(--f-display);letter-spacing:-.01em;margin:30px 0 10px}
 .ext svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ext:hover{background:var(--blue-soft)}
 
+/* overall block */
+.overall{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:16px 16px 18px;margin-top:6px;margin-bottom:68px}
+.overall h2{margin:0 0 14px}
+.overall .stat{margin-bottom:0}
+
 /* stats */
 .stat{margin-bottom:14px}
 .stat-h{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
@@ -328,10 +333,10 @@ function ringSVG(on){
 function renderToday(){
   var t=todayStr();
   var total=UNIQUE.length, solved=UNIQUE.filter(function(p){return state.solved[p.key];}).length;
-  var h='<h2 style="margin-top:6px">Overall</h2>'+
-    '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div>';
+  var h='<section class="overall"><h2>Overall</h2>'+
+    '<div class="stat"><div class="stat-h"><span>Questions solved</span><b>'+solved+' / '+total+'</b></div><div class="bar"><i style="width:'+(100*solved/total)+'%"></i></div></div></section>';
   var pw=reviewWeek(t), rv=state.reviews[pw];
-  h+='<h2>Weekly review</h2>';
+  h+='<h2 style="margin-top:0">Weekly review</h2>';
   if(rv && rv.ids.length){
     var lo={day:'numeric',month:'short'};
     h+='<p class="blurb">Questions from '+parseD(pw).toLocaleDateString(undefined,lo)+' to '+parseD(addDays(pw,6)).toLocaleDateString(undefined,lo)+
